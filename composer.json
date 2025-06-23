@@ -22,13 +22,10 @@
         "horus": {
             "publish": {
                 "config": {
-                    "source": "config/cache.php",
-                    "destination": "config/cache.php"
-                },
-                "views": {
-                    "source": "resources/views/",
-                    "destination": "views/vendor/cache/"
+                    "source": "config/Chronicles.php",
+                    "destination": "config/Chronicles.php"
                 }
+                
             }
         }
     },
