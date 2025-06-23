@@ -4,8 +4,8 @@ namespace Horus\Chronicles\Queue;
 
 use Horus\Chronicles\Contracts\QueueInterface;
 use Horus\Chronicles\Factories\EventFactory;
-use Redis;
-use RedisException;
+use Predis\Client as Redis;
+use Predis\Exception as RedisException;
 
 /**
  * Class RedisQueue

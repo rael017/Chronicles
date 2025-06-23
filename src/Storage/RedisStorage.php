@@ -4,14 +4,14 @@ namespace Horus\Chronicles\Storage;
 
 use Horus\Chronicles\Contracts\EventInterface;
 use Horus\Chronicles\Contracts\StorageInterface;
-use Redis;
-use RedisException;
+use Predis\Client as PredisClient;
+use Predis\Connection\ConnectionException;
 
 class RedisStorage implements StorageInterface
 {
     private const STORAGE_PREFIX = 'chronicles:storage:';
 
-    public function __construct(private Redis $redis) {}
+    public function __construct(private PredisClient $redis) {} // <-- MUDANÇA
 
     public function store(EventInterface $event): bool
     {
@@ -19,9 +19,9 @@ class RedisStorage implements StorageInterface
         $payload = json_encode($event->toArray());
 
         try {
-            $this->redis->lPush($key, $payload);
+            $this->redis->lpush($key, [$payload]); // <-- MUDANÇA
             return true;
-        } catch (RedisException $e) {
+        } catch (ConnectionException $e) {
             error_log("Chronicles Redis Storage Error: " . $e->getMessage());
             return false;
         }

@@ -7,7 +7,7 @@ use Horus\Chronicles\Factories\StorageFactory;
 use Horus\Chronicles\Utils\Sanitizer;
 use Horus\Chronicles\Utils\PayloadLimiter;
 use PDO;
-use Redis;
+use Predis\Client as PredisClient;
 
 /**
  * Class Dispatcher
@@ -71,27 +71,28 @@ final class Dispatcher
      *
      * @return Redis
      */
-    public static function getRedisConnection(): Redis
+    public static function getRedisConnection() : PredisClient
     {
         if (!isset(self::$instances['redis'])) {
-            $config = self::getConfig('connections')['redis'];
-            $redis = new Redis();
-            
-            if ($config['persistent']) {
-                $redis->pconnect($config['host'], $config['port'], $config['timeout']);
-            } else {
-                $redis->connect($config['host'], $config['port'], $config['timeout']);
-            }
+           $config = self::getConfig('connections')['redis'];
+
+            // O Predis usa um formato de array um pouco diferente
+            $parameters = [
+                'scheme' => 'tcp',
+                'host'   => $config['host'],
+                'port'   => $config['port'],
+                'timeout' => $config['timeout'],
+            ];
 
             if (!empty($config['password'])) {
-                $redis->auth($config['password']);
+                $parameters['password'] = $config['password'];
             }
 
             if (isset($config['database'])) {
-                $redis->select($config['database']);
+                $parameters['database'] = $config['database'];
             }
             
-            self::$instances['redis'] = $redis;
+            self::$instances['redis'] = new PredisClient($parameters);
         }
         return self::$instances['redis'];
     }

@@ -1,0 +1,24 @@
+#!/usr/bin/env php
+<?php
+
+// Garante que estamos no diretório raiz do projeto
+chdir(dirname(__DIR__));
+
+// Autoloader do Composer
+
+require_once dirname((__DIR__)).'/vendor/autoload.php';
+
+use Horus\Chronicles\CLI\Kernel;
+use Horus\Chronicles\Core\Chronicles;
+
+// Inicializa o sistema Chronicles para que os componentes possam usar a configuração
+try {
+    Chronicles::init(dirname(__DIR__ ). '/config/Chronicles.php');
+} catch (\Exception $e) {
+    echo "\033[0;31mErro Crítico ao inicializar o Chronicles: {$e->getMessage()}\033[0m" . PHP_EOL;
+    exit(1);
+}
+
+// Cria e executa o Kernel da CLI
+$kernel = new Kernel();
+exit($kernel->handle($argv));
