@@ -22,8 +22,8 @@
         "horus": {
             "publish": {
                 "config": {
-                    "source": "config/Chronicles.php",
-                    "destination": "config/Chronicles.php"
+                    "source": "config/chronicles.php",
+                    "destination": "config/chronicles.php"
                 }
                 
             }
