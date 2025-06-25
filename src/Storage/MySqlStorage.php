@@ -13,7 +13,7 @@ use PDOException;
  * Armazena eventos em um banco de dados MySQL/MariaDB.
  * Cria a query de INSERT dinamicamente com base nos dados do evento.
  */
-class MySQLStorage implements StorageInterface
+class MySqlStorage implements StorageInterface
 {
     public function __construct(private PDO $pdo) {}
 

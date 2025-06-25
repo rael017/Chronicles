@@ -3,31 +3,25 @@
 namespace Horus\Chronicles\Factories;
 
 use Horus\Chronicles\Contracts\QueueInterface;
-use Horus\Chronicles\Core\Dispatcher;
+use Horus\Chronicles\Contracts\StorageInterface;
 use Horus\Chronicles\Queue\RedisQueue;
 use Horus\Chronicles\Queue\SyncQueue;
 use InvalidArgumentException;
 
 /**
- * Class QueueFactory
- *
- * Cria instâncias dos drivers de fila com base na configuração.
+ * Cria instâncias dos drivers de fila.
+ * Recebe todas as dependências possíveis para injetar nos drivers.
  */
 class QueueFactory
 {
-    /**
-     * @param array $config A seção 'queue' da configuração principal.
-     */
-    public function __construct(private array $config)
-    {
+    public function __construct(
+        private array $config, // Apenas a seção 'queue' da config
+        private \Predis\Client $redis,
+        private EventFactory $eventFactory,
+        private StorageInterface $storage // Necessário para a SyncQueue
+    ) {
     }
 
-    /**
-     * Cria e retorna uma instância do driver de fila especificado.
-     *
-     * @param string $driver O nome do driver (ex: 'redis', 'sync').
-     * @return QueueInterface
-     */
     public function make(string $driver): QueueInterface
     {
         return match ($driver) {
@@ -37,35 +31,20 @@ class QueueFactory
         };
     }
 
-    /**
-     * Cria uma instância do RedisQueue, injetando suas dependências.
-     * @return RedisQueue
-     */
     private function createRedisQueue(): RedisQueue
     {
-        $redisConnection = Dispatcher::getRedisConnection();
-        $eventFactory = new EventFactory(); // A fábrica de eventos não tem estado, pode ser instanciada aqui.
         $queueConfig = $this->config['redis'];
-        
         return new RedisQueue(
-            $redisConnection,
-            $eventFactory,
+            $this->redis,
+            $this->eventFactory,
             $queueConfig['queue_name'],
             $queueConfig['dlq_name']
         );
     }
 
-    /**
-     * Cria uma instância do SyncQueue.
-     * O SyncQueue precisa de um driver de armazenamento para funcionar.
-     * @return SyncQueue
-     */
     private function createSyncQueue(): SyncQueue
     {
-        $storageDriverName = Dispatcher::getConfig('storage_driver');
-        $storageDriver = Dispatcher::getStorageFactory()->make($storageDriverName);
-        $eventFactory = new EventFactory();
-
-        return new SyncQueue($storageDriver, $eventFactory);
+        // Agora usa o driver de storage que já foi injetado!
+        return new SyncQueue($this->storage, $this->eventFactory);
     }
 }

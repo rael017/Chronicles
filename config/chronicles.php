@@ -23,19 +23,19 @@ return [
 
     // Habilita ou desabilita completamente a captura de eventos. Se false, o Chronicles
     // terá um impacto de performance quase nulo na sua aplicação.
-    'enabled' => (bool) (getenv('CHRONICLES_ENABLED') ?? true),
+    'enabled' => (bool) (true),
 
     // Define o driver da fila.
     // 'sync':  Processa eventos imediatamente. Ótimo para desenvolvimento e testes. Não requer worker.
     // 'redis': Enfileira eventos no Redis para processamento assíncrono. Requer um worker rodando.
-    'queue_driver' => getenv('CHRONICLES_QUEUE_DRIVER') ?? 'sync',
+    'queue_driver' => 'redis',
 
     // Define onde os eventos serão permanentemente armazenados após o processamento.
     // 'file':  Salva em um arquivo de log. Simples e sem dependências.
     // 'mysql': Salva em um banco de dados MySQL para consultas estruturadas.
     // 'redis': Salva em uma lista do Redis (diferente da fila). Rápido, mas volátil.
     // 'null':  Descarta todos os eventos. Útil para depurar a performance da captura.
-    'storage_driver' => getenv('CHRONICLES_STORAGE_DRIVER') ?? 'file',
+    'storage_driver' => 'mysql',
 
 
     /*
@@ -53,11 +53,10 @@ return [
     'connections' => [
 
         'mysql' => [
-            'host'     => getenv('DB_HOST') ?? '127.0.0.1',
-            'port'     => getenv('DB_PORT') ?? '3306',
+            'host'     =>  '127.0.0.1',
             'database' => 'chronicles', 
-            'username' => getenv('DB_USER') ?? 'root',          // <-- PREENCHA EM .env
-            'password' => getenv('DB_PASS') ?? '',              // <-- PREENCHA EM .env
+            'username' =>  'root',          // <-- PREENCHA EM .env
+            'password' =>  '',              // <-- PREENCHA EM .env
             'charset'  => 'utf8mb4',
             'options'  => [
                 PDO::ATTR_PERSISTENT => true,

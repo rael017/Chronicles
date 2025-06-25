@@ -2,33 +2,25 @@
 
 namespace Horus\Chronicles\Core;
 
+use Horus\Chronicles\Contracts\QueueInterface;
+use Horus\Chronicles\Contracts\StorageInterface;
+use Horus\Chronicles\Factories\EventFactory;
 use Horus\Chronicles\Factories\QueueFactory;
 use Horus\Chronicles\Factories\StorageFactory;
-use Horus\Chronicles\Utils\Sanitizer;
 use Horus\Chronicles\Utils\PayloadLimiter;
+use Horus\Chronicles\Utils\Sanitizer;
 use PDO;
 use Predis\Client as PredisClient;
 
 /**
- * Class Dispatcher
- *
- * Atua como um "Service Container" ou "Service Locator" para o projeto.
- * É responsável por instanciar e gerenciar os singletons de conexões (PDO, Redis)
- * e os drivers de fila e armazenamento, com base na configuração.
- * Centraliza a lógica de criação de objetos.
+ * Atua como um "Service Container" / "Service Locator" para o projeto.
+ * Responsável por instanciar e gerenciar os singletons de todos os serviços.
  */
 final class Dispatcher
 {
     private static ?array $config = null;
     private static array $instances = [];
 
-    /**
-     * Carrega a configuração e prepara o Dispatcher.
-     * Este método deve ser chamado pelo Chronicles::init().
-     *
-     * @param string $configPath
-     * @return void
-     */
     public static function bootstrap(string $configPath): void
     {
         if (is_null(self::$config)) {
@@ -36,13 +28,6 @@ final class Dispatcher
         }
     }
 
-    /**
-     * Retorna a configuração completa ou uma chave específica.
-     *
-     * @param string|null $key
-     * @param mixed|null $default
-     * @return mixed
-     */
     public static function getConfig(?string $key = null, mixed $default = null): mixed
     {
         if (is_null($key)) {
@@ -51,115 +36,88 @@ final class Dispatcher
         return self::$config[$key] ?? $default;
     }
 
-    /**
-     * Retorna a instância singleton da conexão PDO.
-     *
-     * @return PDO
-     */
+    // --- CONSTRUTORES DE SERVIÇOS DE BAIXO NÍVEL ---
+
     public static function getDbConnection(): PDO
     {
         if (!isset(self::$instances['pdo'])) {
             $config = self::getConfig('connections')['mysql'];
-            $dsn = "mysql:host={$config['host']};port={$config['port']};dbname={$config['database']};charset={$config['charset']}";
-            self::$instances['pdo'] = new PDO($dsn, $config['username'], $config['password'], $config['options']);
+            $dsn = "mysql:host={$config['host']};dbname={$config['database']};charset={$config['charset']}";
+            self::$instances['pdo'] = new \PDO($dsn, $config['username'], $config['password'], $config['options'] ?? []);
         }
         return self::$instances['pdo'];
     }
 
-    /**
-     * Retorna a instância singleton da conexão Redis.
-     *
-     * @return Redis
-     */
-    public static function getRedisConnection() : PredisClient
+    public static function getRedisConnection(): PredisClient
     {
         if (!isset(self::$instances['redis'])) {
-           $config = self::getConfig('connections')['redis'];
-
-            // O Predis usa um formato de array um pouco diferente
-            $parameters = [
-                'scheme' => 'tcp',
-                'host'   => $config['host'],
-                'port'   => $config['port'],
-                'timeout' => $config['timeout'],
-            ];
-
-            if (!empty($config['password'])) {
-                $parameters['password'] = $config['password'];
-            }
-
-            if (isset($config['database'])) {
-                $parameters['database'] = $config['database'];
-            }
-            
-            self::$instances['redis'] = new PredisClient($parameters);
+            $config = self::getConfig('connections.redis', []);
+            self::$instances['redis'] = new PredisClient($config);
         }
         return self::$instances['redis'];
     }
 
-    /**
-     * Retorna a instância singleton do Sanitizer.
-     *
-     * @return Sanitizer
-     */
+    // --- CONSTRUTORES DE UTILITÁRIOS ---
+
     public static function getSanitizer(): Sanitizer
     {
         if (!isset(self::$instances['sanitizer'])) {
-            self::$instances['sanitizer'] = new Sanitizer(self::getConfig('sanitizer', []));
+            $config = self::getConfig('security.sanitizer', []);
+            self::$instances['sanitizer'] = new Sanitizer($config);
         }
         return self::$instances['sanitizer'];
     }
 
-    /**
-     * Retorna a instância singleton do PayloadLimiter.
-     *
-     * @return PayloadLimiter
-     */
     public static function getPayloadLimiter(): PayloadLimiter
     {
         if (!isset(self::$instances['payload_limiter'])) {
-            self::$instances['payload_limiter'] = new PayloadLimiter(self::getConfig('payload_limiter', []));
+            $config = self::getConfig('security.payload_limiter', []);
+            self::$instances['payload_limiter'] = new PayloadLimiter($config);
         }
         return self::$instances['payload_limiter'];
     }
+    
+    // --- CONSTRUTORES DE FÁBRICAS E INTERFACES ---
 
-    /**
-     * Retorna a instância da fábrica de filas.
-     * @return QueueFactory
-     */
-    public static function getQueueFactory(): QueueFactory
+    public static function getEventFactory(): EventFactory
     {
-        if (!isset(self::$instances['queue_factory'])) {
-            $factoryClass = self::getConfig('factories')['queue'];
-            self::$instances['queue_factory'] = new $factoryClass(self::getConfig('queue'));
+        if (!isset(self::$instances['event_factory'])) {
+            // A EventFactory precisa do Sanitizer e do Limiter
+            self::$instances['event_factory'] = new EventFactory(
+                self::getSanitizer(),
+                self::getPayloadLimiter()
+            );
         }
-        return self::$instances['queue_factory'];
+        return self::$instances['event_factory'];
     }
 
-    /**
-     * Retorna a instância da fábrica de armazenamento.
-     * @return StorageFactory
-     */
     public static function getStorageFactory(): StorageFactory
     {
         if (!isset(self::$instances['storage_factory'])) {
-             $factoryClass = self::getConfig('factories')['storage'];
-             self::$instances['storage_factory'] = new $factoryClass(self::getConfig('connections'));
+            // A StorageFactory precisa das conexões e do file path
+            self::$instances['storage_factory'] = new StorageFactory(
+                self::getDbConnection(),
+                self::getRedisConnection(),
+                self::getConfig('connections.file.events_path', '')
+            );
         }
         return self::$instances['storage_factory'];
     }
     
-    /**
-     * Fecha conexões persistentes, se houver.
-     * @return void
-     */
-    public static function terminate(): void
+    // ESTE É O MÉTODO QUE VOCÊ QUERIA CORRIGIR, AGORA COMPLETO
+    public static function getQueueFactory(): QueueFactory
     {
-        if (isset(self::$instances['redis'])) {
-            self::$instances['redis']->close();
+        if (!isset(self::$instances['queue_factory'])) {
+            // A QueueFactory precisa de TUDO que seus drivers possam precisar.
+            self::$instances['queue_factory'] = new QueueFactory(
+                self::getConfig('queue', []),
+                self::getRedisConnection(),
+                self::getEventFactory(),
+                // Para a SyncQueue, precisamos de um driver de storage. Vamos criá-lo aqui.
+                self::getStorageFactory()->make(self::getConfig('storage_driver'))
+            );
         }
-        // PDO com ATTR_PERSISTENT não tem um método close explícito gerenciado pelo PHP.
-        self::$instances = [];
-        self::$config = null;
+        return self::$instances['queue_factory'];
     }
 }
+

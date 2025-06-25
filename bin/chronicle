@@ -13,7 +13,7 @@ use Horus\Chronicles\Core\Chronicles;
 
 // Inicializa o sistema Chronicles para que os componentes possam usar a configuração
 try {
-    Chronicles::init(dirname(__DIR__ ). '/config/Chronicles.php');
+    Chronicles::init(dirname(__DIR__ ). '/config/chronicles.php');
 } catch (\Exception $e) {
     echo "\033[0;31mErro Crítico ao inicializar o Chronicles: {$e->getMessage()}\033[0m" . PHP_EOL;
     exit(1);
