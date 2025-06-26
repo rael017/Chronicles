@@ -1,24 +1,41 @@
 #!/usr/bin/env php
 <?php
 
-// Garante que estamos no diretório raiz do projeto
-chdir(dirname(__DIR__));
+// Procura pelo autoloader subindo os diretórios.
+// Isso garante que ele funcione tanto no desenvolvimento do Chronicles quanto quando instalado no MeuProjeto.
+foreach ([__DIR__.'/../../..', __DIR__.'/..'] as $dir) {
+    if (file_exists($path = $dir.'/vendor/autoload.php')) {
+        require_once $path;
+        // Define a raiz do projeto principal (MeuProjeto)
+        define('PROJECT_ROOT', dirname($path, 2));
+        break;
+    }
+}
 
-// Autoloader do Composer
-
-require_once dirname((__DIR__)).'/vendor/autoload.php';
+if (!defined('PROJECT_ROOT')) {
+    echo "Erro: vendor/autoload.php não encontrado. Rode 'composer install'.\n";
+    exit(1);
+}
 
 use Horus\Chronicles\CLI\Kernel;
 use Horus\Chronicles\Core\Chronicles;
 
-// Inicializa o sistema Chronicles para que os componentes possam usar a configuração
-try {
-    Chronicles::init(dirname(__DIR__ ). '/config/chronicles.php');
-} catch (\Exception $e) {
-    echo "\033[0;31mErro Crítico ao inicializar o Chronicles: {$e->getMessage()}\033[0m" . PHP_EOL;
-    exit(1);
+// Assume que a configuração está na pasta /config do projeto principal.
+$configPath = PROJECT_ROOT . '/config/chronicles.php';
+
+if (!file_exists($configPath)) {
+    echo "\033[0;31mErro: Arquivo de configuração não encontrado em: {$configPath}\033[0m" . PHP_EOL;
+    echo "Por favor, execute o comando de instalação para publicar os arquivos necessários: php ./vendor/bin/chronicles install\n";
+    // Nota: Nós criamos um comando 'install' para facilitar isso.
+    // Vamos permitir que o comando 'install' rode mesmo sem config.
+    if (!isset($argv[1]) || $argv[1] !== 'install') {
+        exit(1);
+    }
 }
 
-// Cria e executa o Kernel da CLI
+// Inicializa o Chronicles usando a configuração do projeto principal
+Chronicles::init($configPath);
+
+// Cria e executa o Kernel da CLI do Chronicles
 $kernel = new Kernel();
 exit($kernel->handle($argv));

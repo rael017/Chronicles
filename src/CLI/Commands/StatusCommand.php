@@ -28,8 +28,8 @@ class StatusCommand extends BaseCommand
         $this->output("");
 
         $this->output("Status da Fila:", 'green');
-        $this->output("  Fila Principal ({$statusData['queue_name']}): {$statusData['queue_size']} eventos");
-        $this->output("  Fila de Erros (DLQ) ({$statusData['dlq_name']}): {$statusData['dlq_size']} eventos");
+        $this->output("Fila Principal ({$statusData['queue_name']}): {$statusData['queue_size']} eventos");
+        $this->output("Fila de Erros (DLQ) ({$statusData['dlq_name']}): {$statusData['dlq_size']} eventos");
 
         if ($statusData['dlq_size'] > 0) {
             $this->output("  \033[0;31mALERTA: Existem eventos na DLQ. Use `dlq:inspect` para investigar.\033[0m");

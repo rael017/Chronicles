@@ -48,7 +48,7 @@ final class Dispatcher
     public static function getRedisConnection(): PredisClient
     {
         if (!isset(self::$instances['redis'])) {
-            $config = self::getConfig('connections.redis', []);
+            $config = self::getConfig('connections') ['redis'];
             self::$instances['redis'] = new PredisClient($config);
         }
         return self::$instances['redis'];

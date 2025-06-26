@@ -38,6 +38,25 @@ return [
     'storage_driver' => 'mysql',
 
 
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Caminhos de Publicação
+    |--------------------------------------------------------------------------
+    |
+    | Defina aqui onde os arquivos do Chronicles (como configurações e migrações)
+    | devem ser publicados quando o comando `chronicles:install` é executado.
+    | Usar `getcwd()` garante que o caminho seja relativo à raiz do projeto
+    | que está instalando o Chronicles.
+    |
+    */
+    'paths' => [
+        'config' => getcwd() . '/config',
+        'migrations' => getcwd() . '/database/migrations',
+    ],
+
+
     /*
     |--------------------------------------------------------------------------
     | Configurações de Conexão
@@ -49,14 +68,15 @@ return [
     | Coloque os valores reais no seu arquivo .env.
     |
     */
+    
 
     'connections' => [
 
         'mysql' => [
-            'host'     =>  '127.0.0.1',
-            'database' => 'chronicles', 
-            'username' =>  'root',          // <-- PREENCHA EM .env
-            'password' =>  '',              // <-- PREENCHA EM .env
+            'host'     => getenv('DB_HOST') ?: '127.0.0.1',
+            'database' => getenv('DB_NAME') ?: 'chronicles', 
+            'username' => getenv('DB_NAME') ?: 'root',            // <-- PREENCHA EM .env
+            'password' => getenv('DB_PASS') ?: '',            // <-- PREENCHA EM .env
             'charset'  => 'utf8mb4',
             'options'  => [
                 PDO::ATTR_PERSISTENT => true,
@@ -66,8 +86,8 @@ return [
         ],
 
         'redis' => [
-            'host'     => getenv('REDIS_HOST') ?? '127.0.0.1',
-            'port'     => getenv('REDIS_PORT') ?? 6379,
+            'host'     => getenv('REDIS_HOST') ?: '127.0.0.1',
+            'port'     => getenv('REDIS_PORT') ?: '6379',
             'password' => getenv('REDIS_PASSWORD') ?? null,         // <-- PREENCHA EM .env (se houver)
             'database' => getenv('REDIS_DATABASE') ?? 0,
             'timeout'  => 1.0,

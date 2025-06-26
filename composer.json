@@ -3,6 +3,9 @@
     "description": "Sistema modular de rastreamento, auditoria e logging para aplicações PHP modernas.",
     "type": "library",
     "license": "MIT",
+     "bin": [
+        "bin/chronicles"
+    ],
     "authors": [
         {
             "name": "Felipe Raphaeç"
