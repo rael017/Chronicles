@@ -1,7 +1,7 @@
 <?php
 
-namespace Horus\Chronicles\Core;
-
+namespace Horus\Chronicles;
+use Horus\Chronicles\Core\Chronicles;
 use Horus\Chronicles\Events\ExceptionEvent;
 use Throwable;
 

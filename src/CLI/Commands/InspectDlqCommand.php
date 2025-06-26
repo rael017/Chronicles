@@ -2,6 +2,7 @@
 
 namespace Horus\Chronicles\CLI\Commands;
 
+use Horus\Chronicles\Actions\InspectDlqAction;
 use Horus\Chronicles\Core\Dispatcher;
 
 class InspectDlqCommand extends BaseCommand
@@ -13,28 +14,26 @@ class InspectDlqCommand extends BaseCommand
         $this->output("Inspecionando a Dead-Letter Queue (DLQ)...", 'yellow');
         
         $queue = Dispatcher::getQueueFactory()->make(Dispatcher::getConfig('queue_driver'));
-        
-        $dlqSize = $queue->getDlqSize();
+        $action = new InspectDlqAction($queue);
 
-        if ($dlqSize === 0) {
+        $limit = (int) ($this->parseArgument($args, 'limit') ?? 20);
+        $events = $action->execute($limit);
+
+        if (empty($events)) {
             $this->output("A DLQ está vazia. Nenhum evento com erro encontrado.", 'green');
             return 0;
         }
 
-        $limit = (int) ($this->parseArgument($args, 'limit') ?? 20);
-        $this->output("Encontrado(s) {$dlqSize} evento(s) na DLQ. Exibindo os últimos {$limit}:", 'yellow');
+        $dlqSize = $queue->getDlqSize();
+        $this->output("Encontrado(s) {$dlqSize} evento(s) na DLQ. Exibindo os últimos " . count($events) . ":", 'yellow');
         $this->output(str_repeat('-', 80));
-
-        $events = $queue->inspectDlq($limit);
 
         foreach ($events as $index => $payload) {
             $data = json_decode($payload, true);
             $id = $data['data']['id'] ?? 'N/A';
             $type = $data['data']['type'] ?? 'N/A';
-            $class = $data['class'] ?? 'N/A';
             
             $this->output(sprintf("#%d | ID: %s | Tipo: %s", $index + 1, $id, $type), 'cyan');
-            $this->output("    Classe: {$class}");
             $this->output("    Payload (resumido): " . substr(preg_replace('/\s+/', ' ', $payload), 0, 150) . "...");
             $this->output(str_repeat('-', 80));
         }

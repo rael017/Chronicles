@@ -2,6 +2,7 @@
 
 namespace Horus\Chronicles\CLI\Commands;
 
+use Horus\Chronicles\Actions\FlushQueueAction;
 use Horus\Chronicles\Core\Dispatcher;
 
 class FlushQueueCommand extends BaseCommand
@@ -12,7 +13,6 @@ class FlushQueueCommand extends BaseCommand
     {
         $this->output("AVISO: Esta ação é destrutiva e não pode ser desfeita.", 'yellow');
         
-        // Pede confirmação ao usuário
         $confirmation = readline("Você tem certeza que deseja limpar a fila principal? [s/N]: ");
 
         if (strtolower(trim($confirmation)) !== 's') {
@@ -20,25 +20,18 @@ class FlushQueueCommand extends BaseCommand
             return 0;
         }
 
-        try {
-            $queue = Dispatcher::getQueueFactory()->make(Dispatcher::getConfig('queue_driver'));
-            
-            $this->output("Limpando a fila '{$queue->getQueueName()}'...");
-            
-            $itemCount = $queue->getQueueSize();
-            
-            if ($itemCount === 0) {
-                 $this->output("A fila já estava vazia.", 'green');
-                 return 0;
-            }
+        // Pega a dependência (QueueInterface) através do Dispatcher
+        $queue = Dispatcher::getQueueFactory()->make(Dispatcher::getConfig('queue_driver'));
+        
+        // Cria e executa a Action
+        $action = new FlushQueueAction($queue);
+        $itemCount = $queue->getQueueSize(); // Pega o tamanho antes de limpar
+        $action->execute();
 
-            $queue->flushQueue();
-
-            $this->output("{$itemCount} evento(s) foram removidos da fila com sucesso.", 'green');
-
-        } catch (\Exception $e) {
-            $this->output("Ocorreu um erro ao tentar limpar a fila: " . $e->getMessage());
-            return 1;
+        if ($itemCount > 0) {
+            $this->output("{$itemCount} evento(s) foram removidos da fila '{$queue->getQueueName()}' com sucesso.", 'green');
+        } else {
+            $this->output("A fila '{$queue->getQueueName()}' já estava vazia.", 'green');
         }
 
         return 0;

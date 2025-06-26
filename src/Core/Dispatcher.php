@@ -1,9 +1,6 @@
 <?php
-
 namespace Horus\Chronicles\Core;
 
-use Horus\Chronicles\Contracts\QueueInterface;
-use Horus\Chronicles\Contracts\StorageInterface;
 use Horus\Chronicles\Factories\EventFactory;
 use Horus\Chronicles\Factories\QueueFactory;
 use Horus\Chronicles\Factories\StorageFactory;
@@ -118,6 +115,16 @@ final class Dispatcher
             );
         }
         return self::$instances['queue_factory'];
+    }
+
+    public static function terminate(): void
+    {
+        if (isset(self::$instances['redis'])) {
+            self::$instances['redis']->close();
+        }
+        // PDO com ATTR_PERSISTENT não tem um método close explícito gerenciado pelo PHP.
+        self::$instances = [];
+        self::$config = null;
     }
 }
 

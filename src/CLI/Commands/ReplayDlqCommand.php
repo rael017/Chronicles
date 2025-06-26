@@ -2,6 +2,7 @@
 
 namespace Horus\Chronicles\CLI\Commands;
 
+use Horus\Chronicles\Actions\ReplayDlqAction;
 use Horus\Chronicles\Core\Dispatcher;
 
 class ReplayDlqCommand extends BaseCommand
@@ -13,7 +14,7 @@ class ReplayDlqCommand extends BaseCommand
         $this->output("Reprocessando eventos da Dead-Letter Queue (DLQ)...", 'yellow');
 
         if (!in_array('--all', $args)) {
-            $this->output("Por segurança, você deve especificar a flag --all para reprocessar todos os eventos.", 'red');
+            $this->output("Por segurança, você deve especificar a flag --all para reprocessar todos os eventos.");
             $this->output("Exemplo: php bin/chronicles dlq:replay --all");
             return 1;
         }
@@ -26,34 +27,22 @@ class ReplayDlqCommand extends BaseCommand
             return 0;
         }
         
-        $confirmation = readline("Encontrados {$dlqSize} eventos na DLQ. Deseja movê-los para a fila principal para reprocessamento? [s/N]: ");
-        if (strtolower($confirmation) !== 's') {
+        $confirmation = readline("Encontrados {$dlqSize} eventos na DLQ. Deseja movê-los para a fila principal? [s/N]: ");
+        if (strtolower(trim($confirmation)) !== 's') {
             $this->output("Ação cancelada.", 'green');
             return 0;
         }
 
-        $replayedCount = 0;
-        // Precisamos usar um pop do Redis que move de uma lista para outra atomicamente (BRPOPLPUSH)
-        // para máxima segurança. Como nossa interface é simples, vamos simular com rpop e lpush.
-        // Em uma implementação real, o driver RedisQueue teria um método `replay` otimizado.
-
+        $action = new ReplayDlqAction($queue);
+        
         $this->output("Iniciando o reprocessamento...");
         
-        // Pega todos os itens da DLQ de uma vez
-        $itemsToReplay = $queue->inspectDlq($dlqSize);
-
-        foreach ($itemsToReplay as $payload) {
-            // Remove da DLQ
-            if ($queue->removeFromDlq($payload) > 0) {
-                 // Adiciona na fila principal
-                $queue->push($payload);
-                $replayedCount++;
-                echo "."; // Indicador de progresso
-            }
-        }
+        $replayedCount = $action->execute();
         
-        echo "\n"; // Nova linha após o progresso
         $this->output("{$replayedCount} de {$dlqSize} evento(s) foram movidos para a fila principal.", 'green');
+        if ($replayedCount < $dlqSize) {
+            $this->output("Alguns eventos podem não ter sido movidos devido a erros de concorrência. Tente novamente.", 'yellow');
+        }
 
         return 0;
     }

@@ -2,6 +2,7 @@
 
 namespace Horus\Chronicles\CLI\Commands;
 
+use Horus\Chronicles\Actions\ClearStorageAction;
 use Horus\Chronicles\Core\Dispatcher;
 
 class ClearEventsCommand extends BaseCommand
@@ -22,31 +23,24 @@ class ClearEventsCommand extends BaseCommand
             return 0;
         }
 
-        try {
-            $storage = Dispatcher::getStorageFactory()->make(Dispatcher::getConfig('storage_driver'));
+        // Pega a dependência (StorageInterface)
+        $storage = Dispatcher::getStorageFactory()->make(Dispatcher::getConfig('storage_driver'));
 
-            $this->output("Limpando {$target} do armazenamento...");
+        // Cria e executa a Action
+        $action = new ClearStorageAction($storage);
+        
+        $this->output("Limpando {$target} do armazenamento...");
 
-            if ($storage->clear($type)) {
-                $this->output("Armazenamento limpo com sucesso.", 'green');
-            } else {
-                $this->output("Ocorreu um erro ao limpar o armazenamento (o driver pode ter reportado uma falha).", 'red');
-                return 1;
-            }
-        } catch (\Exception $e) {
-            $this->output("Ocorreu um erro ao tentar limpar o armazenamento: " . $e->getMessage());
+        if ($action->execute($type)) {
+            $this->output("Armazenamento limpo com sucesso.", 'green');
+        } else {
+            $this->output("Ocorreu um erro ao limpar o armazenamento (o driver de armazenamento reportou uma falha).");
             return 1;
         }
 
         return 0;
     }
 
-    /**
-     * Extrai um argumento no formato --nome=valor de um array.
-     * @param array $args
-     * @param string $name
-     * @return string|null
-     */
     private function parseArgument(array $args, string $name): ?string
     {
         foreach ($args as $arg) {
