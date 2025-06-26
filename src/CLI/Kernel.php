@@ -8,6 +8,7 @@ use Horus\Chronicles\CLI\Commands\InspectDlqCommand;
 use Horus\Chronicles\CLI\Commands\ReplayDlqCommand;
 use Horus\Chronicles\CLI\Commands\StatusCommand;
 use Horus\Chronicles\CLI\Commands\WatchEventsCommand;
+use Horus\Chronicles\CLI\Commands\InstallCommand;
 use Throwable;
 
 class Kernel
@@ -30,7 +31,8 @@ class Kernel
             'dlq:inspect' => new InspectDlqCommand(),
             'dlq:replay' => new ReplayDlqCommand(),
             'storage:clear' => new ClearEventsCommand(),
-            'watch'        => new WatchEventsCommand()
+            'watch'        => new WatchEventsCommand(),
+            'install'      => new InstallCommand()
         ];
     }
 
