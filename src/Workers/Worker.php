@@ -1,5 +1,4 @@
 <?php
-
 namespace Horus\Chronicles\Workers;
 
 use Horus\Chronicles\Contracts\QueueInterface;

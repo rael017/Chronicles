@@ -120,7 +120,7 @@ final class Dispatcher
     public static function terminate(): void
     {
         if (isset(self::$instances['redis'])) {
-            self::$instances['redis']->close();
+            self::$instances['redis']->disconnect();
         }
         // PDO com ATTR_PERSISTENT não tem um método close explícito gerenciado pelo PHP.
         self::$instances = [];

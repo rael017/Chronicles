@@ -31,7 +31,7 @@ if (!file_exists($configPath)) {
     if (!isset($argv[1]) || $argv[1] !== 'install') {
         exit(1);
     }
-}
+}   
 
 // Inicializa o Chronicles usando a configuração do projeto principal
 Chronicles::init($configPath);

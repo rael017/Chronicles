@@ -26,7 +26,7 @@ class WatchEventsCommand extends BaseCommand
 
         while (true) {
             foreach ($eventTypes as $type) {
-                $tableName = "chronicles_{$type}_events";
+                $tableName = "tb_chronicles_{$type}";
                 $lastId = $lastIds[$type] ?? 0;
 
                 $stmt = $pdo->prepare("SELECT * FROM `{$tableName}` WHERE id > :last_id ORDER BY id ASC LIMIT 100");

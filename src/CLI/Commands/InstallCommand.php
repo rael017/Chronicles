@@ -3,7 +3,7 @@
 namespace Horus\Chronicles\CLI\Commands;
 
 use Horus\Chronicles\Core\Dispatcher;
-
+use RuntimeException;
 class InstallCommand extends BaseCommand
 {
     protected string $description = "Publica o arquivo de configuração e as migrações do Chronicles.";
@@ -12,58 +12,102 @@ class InstallCommand extends BaseCommand
     {
         $this->output("Publicando recursos do Chronicles...", 'yellow');
 
-        // Pega a configuração para passá-la aos métodos de publicação
-        $config = Dispatcher::getConfig();
+        try {
+            // Analisa os argumentos para caminhos customizados
+            $configPath = $this->parseArgument($args, 'config-path') ?? 'config';
+            $migrationsPath = $this->parseArgument($args, 'migrations-path');
+            $force = in_array('--force', $args);
 
-        // 1. Publicar o arquivo de configuração
-        $this->publishConfig($config);
+            // Executa a publicação
+            $this->publishConfig($configPath, $force);
+            $this->publishMigration($migrationsPath);
 
-        // 2. Publicar o arquivo de migração SQL
-        $this->publishMigration($config);
+        } catch (RuntimeException $e) {
+            $this->output("ERRO: " . $e->getMessage());
+            return 1;
+        }
 
-        $this->output("\nChronicles instalado com sucesso!", 'green');
-        $this->output("1. Edite o arquivo 'config/chronicles.php' se necessário.", 'white');
-        $this->output("2. Adicione suas credenciais de DB/Redis ao arquivo '.env'.", 'white');
-        $this->output("3. Execute 'php ./vendor/bin/chronicles db:setup' para preparar o banco de dados.", 'white');
+        $this->output("\n✅ Chronicles instalado com sucesso!", 'green');
+        $this->output("Próximos passos:", 'white');
+        $this->output("  1. Edite o '.env' com suas configurações de DB/Redis.");
+        $this->output("  2. Rode 'php ./vendor/bin/chronicles db:setup' para preparar o banco de dados.");
 
         return 0;
     }
 
-    private function publishConfig(array $config): void
+    /**
+     * Copia o arquivo de configuração para o caminho de destino no projeto principal.
+     */
+    private function publishConfig(string $destinationRelativePath, bool $force): void
     {
-        // Lê o caminho do config ou usa um padrão
-        $destinationDir = $config['paths']['config'] ?? getcwd() . '/config';
+        $sourceFile = __DIR__ . '/../../../config/chronicles.php';
+        if (!file_exists($sourceFile)) {
+            throw new RuntimeException("Arquivo de configuração de origem não foi encontrado no pacote.");
+        }
+        
+        // Usa getcwd() para obter a raiz do projeto principal de forma confiável
+        $projectRoot = getcwd();
+        $destinationDir = $projectRoot . '/' . ltrim($destinationRelativePath, '/');
         $destinationFile = $destinationDir . '/chronicles.php';
 
         if (!is_dir($destinationDir)) {
             mkdir($destinationDir, 0755, true);
         }
 
-        if (file_exists($destinationFile)) {
-            $this->output("  - Arquivo de configuração já existe. Pulando.", 'yellow');
+        if (file_exists($destinationFile) && !$force) {
+            $this->output("  - Arquivo de configuração já existe. Use --force para sobrescrever. Pulando.", 'yellow');
             return;
         }
 
-        $source = realpath(__DIR__ . '/../../../config/chronicles.php');
-        copy($source, $destinationFile);
-        $this->output("  - Configuração publicada em: " . str_replace(getcwd() . '/', '', $destinationFile), 'green');
+        copy($sourceFile, $destinationFile);
+        $this->output("  - Configuração publicada em: " . $destinationRelativePath . '/chronicles.php', 'green');
     }
 
-    private function publishMigration(array $config): void
+    /**
+     * Copia os arquivos de migração para o caminho de destino no projeto principal.
+     */
+    private function publishMigration(string $destinationRelativePath): void
     {
-        // LÊ O CAMINHO DO ARQUIVO DE CONFIGURAÇÃO!
-        // Se a chave não existir, ele usa um caminho padrão para não quebrar.
-        $defaultPath = getcwd() . '/database/migrations';
-        $destinationDir = $config['paths']['migrations'] ?? $defaultPath;
-        
-        $source = realpath(__DIR__ . '/../../../database/migrations/202406_create_chronicles_tables.sql');
-        $destinationFile = $destinationDir . '/' . date('Y_m_d_His') . '_create_chronicles_tables.sql';
+        $sourceDir = __DIR__ . '/../../../database/migrations';
+        if (!is_dir($sourceDir)) {
+            throw new RuntimeException("Diretório de migrações de origem não foi encontrado no pacote.");
+        }
+
+        $projectRoot = getcwd();
+        $destinationDir = $projectRoot . '/' . ltrim($destinationRelativePath, '/');
 
         if (!is_dir($destinationDir)) {
             mkdir($destinationDir, 0755, true);
         }
+
+        $migrationFiles = glob($sourceDir . '/*.sql');
+        if (empty($migrationFiles)) {
+            $this->output("  - Nenhum arquivo .sql de migração encontrado para publicar.", 'yellow');
+            return;
+        }
         
-        copy($source, $destinationFile);
-        $this->output("  - Migração publicada em: " . str_replace(getcwd() . '/', '', $destinationFile), 'green');
+        foreach ($migrationFiles as $sourceFile) {
+            if (is_file($sourceFile)) {
+                $baseName = basename($sourceFile);
+                $timestampedDestination = $destinationDir . '/'  . $baseName;
+                
+                copy($sourceFile, $timestampedDestination);
+                $this->output("  - Migração publicada em: " . $destinationRelativePath . basename($timestampedDestination), 'green');
+            }
+        }
+    }
+
+    /**
+     * Extrai um argumento no formato --nome=valor de um array.
+     */
+    private function parseArgument(array $args, string $name): ?string
+    {
+        foreach ($args as $arg) {
+            $pattern = "/^--{$name}=(.*)$/";
+            if (preg_match($pattern, $arg, $matches)) {
+                return $matches[1];
+            }
+        }
+        return null;
     }
 }

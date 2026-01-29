@@ -52,7 +52,7 @@ return [
     |
     */
     'paths' => [
-        'config' => getcwd() . '/config',
+        'config'     => getcwd() . '/config/chronicles.php',
         'migrations' => getcwd() . '/database/migrations',
     ],
 
@@ -86,7 +86,7 @@ return [
         ],
 
         'redis' => [
-            'host'     => getenv('REDIS_HOST') ?: '127.0.0.1',
+            'host'     => '127.0.0.1',
             'port'     => getenv('REDIS_PORT') ?: '6379',
             'password' => getenv('REDIS_PASSWORD') ?? null,         // <-- PREENCHA EM .env (se houver)
             'database' => getenv('REDIS_DATABASE') ?? 0,
