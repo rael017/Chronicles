@@ -14,8 +14,8 @@ class InstallCommand extends BaseCommand
 
         try {
             // Analisa os argumentos para caminhos customizados
-            $configPath = $this->parseArgument($args, 'config-path') ?? 'config';
-            $migrationsPath = $this->parseArgument($args, 'migrations-path');
+            $configPath = $this->parseArgument($args, 'config-path') ?? Dispatcher::getConfig('config', 'config');
+            $migrationsPath = $this->parseArgument($args, 'migrations-path') ?? Dispatcher::getConfig('migrations', 'database/migrations');
             $force = in_array('--force', $args);
 
             // Executa a publicação
