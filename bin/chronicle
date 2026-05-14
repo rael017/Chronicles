@@ -7,7 +7,7 @@ foreach ([__DIR__.'/../../..', __DIR__.'/..'] as $dir) {
     if (file_exists($path = $dir.'/vendor/autoload.php')) {
         require_once $path;
         // Define a raiz do projeto principal (MeuProjeto)
-        define('PROJECT_ROOT', dirname($path, 6)); // Sobe 6 níveis para chegar na raiz do projeto
+        define('PROJECT_ROOT', dirname($path, 7)); // Sobe 6 níveis para chegar na raiz do projeto
         break;
     }
 }
