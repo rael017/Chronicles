@@ -52,8 +52,8 @@ return [
     |
     */
     'paths' => [
-        'config'     => getcwd() . '/config/chronicles.php',
-        'migrations' => getcwd() . '/database/migrations',
+        'config'     => getcwd() . '/Config/chronicles.php',
+        'migrations' => getcwd() . '/DataBase/Migrations',
     ],
 
 

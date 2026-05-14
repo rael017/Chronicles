@@ -7,7 +7,7 @@ foreach ([__DIR__.'/../../..', __DIR__.'/..'] as $dir) {
     if (file_exists($path = $dir.'/vendor/autoload.php')) {
         require_once $path;
         // Define a raiz do projeto principal (MeuProjeto)
-        define('PROJECT_ROOT', dirname($path, 2));
+        define('PROJECT_ROOT', dirname($path, 6)); // Sobe 6 níveis para chegar na raiz do projeto
         break;
     }
 }
@@ -21,7 +21,7 @@ use Horus\Chronicles\CLI\Kernel;
 use Horus\Chronicles\Core\Chronicles;
 
 // Assume que a configuração está na pasta /config do projeto principal.
-$configPath = PROJECT_ROOT . '/config/chronicles.php';
+$configPath = PROJECT_ROOT . '/Config/chronicles.php';
 
 if (!file_exists($configPath)) {
     echo "\033[0;31mErro: Arquivo de configuração não encontrado em: {$configPath}\033[0m" . PHP_EOL;
