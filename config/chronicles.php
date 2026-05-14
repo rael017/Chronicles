@@ -75,7 +75,7 @@ return [
         'mysql' => [
             'host'     => getenv('DB_HOST') ?: '127.0.0.1',
             'database' => getenv('DB_NAME') ?: 'chronicles', 
-            'username' => getenv('DB_NAME') ?: 'root',            // <-- PREENCHA EM .env
+            'username' => getenv('DB_USER') ?: 'root',            // <-- PREENCHA EM .env
             'password' => getenv('DB_PASS') ?: '',            // <-- PREENCHA EM .env
             'charset'  => 'utf8mb4',
             'options'  => [
@@ -86,7 +86,7 @@ return [
         ],
 
         'redis' => [
-            'host'     => '127.0.0.1',
+            'host'     => getenv('REDIS_HOST') ?: '127.0.0.1',
             'port'     => getenv('REDIS_PORT') ?: '6379',
             'password' => getenv('REDIS_PASSWORD') ?? null,         // <-- PREENCHA EM .env (se houver)
             'database' => getenv('REDIS_DATABASE') ?? 0,
